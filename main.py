@@ -27,7 +27,8 @@ def index():
     
     return render_template('index.html',
                          current_time=current_time,
-                         mod_time=mod_time)
+                         mod_time=mod_time,
+                         weekday=current_time.strftime('%A'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
