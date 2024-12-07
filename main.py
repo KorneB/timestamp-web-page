@@ -28,6 +28,10 @@ def check_vmix_connection(ip=None):
         return response.status_code == 200
     except requests.RequestException as e:
         logger.debug(f"vMix connection not available at {ip or current_vmix_ip}: {str(e)}")
+        # In development/demo mode, always return True
+        if app.debug:
+            logger.info("Demo mode: Simulating successful vMix connection")
+            return True
         return False
 
 def get_vmix_inputs(ip=None):
