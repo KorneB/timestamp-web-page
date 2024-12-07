@@ -36,7 +36,7 @@ A simple proof-of-concept web application that displays the current timestamp an
 
 2. Open your browser and navigate to:
    ```
-   http://localhost:5000
+   http://localhost:5050
    ```
 
 ## Project Structure
