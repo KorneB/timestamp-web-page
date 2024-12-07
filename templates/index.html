@@ -25,9 +25,34 @@
                             <h2 class="h5">Day of Week:</h2>
                             <p class="lead">{{ weekday }}</p>
                         </div>
-                        <div>
+                        <div class="mb-4">
                             <h2 class="h5">Last Modified:</h2>
                             <p class="lead">{{ mod_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h2 class="h5 mb-0">vMix Integration Status</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h3 class="h6">Connection Status:</h3>
+                                    {% if vmix_connected %}
+                                    <span class="badge bg-success">Connected</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Disconnected</span>
+                                    {% endif %}
+                                </div>
+                                {% if vmix_connected and vmix_inputs %}
+                                <div>
+                                    <h3 class="h6">Input List:</h3>
+                                    <ul class="list-group">
+                                        {% for input in vmix_inputs %}
+                                        <li class="list-group-item">{{ input.name }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
