@@ -34,6 +34,16 @@
                                 <h2 class="h5 mb-0">vMix Integration Status</h2>
                             </div>
                             <div class="card-body">
+                                <form id="vmixConnectForm" class="mb-4">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="vmixIp" name="vmix_ip" 
+                                               placeholder="Enter vMix IP (e.g., localhost:8088)" 
+                                               value="{{ vmix_ip|default('localhost:8088') }}"
+                                               required>
+                                        <button type="submit" class="btn btn-primary">Connect</button>
+                                    </div>
+                                    <div id="connectionFeedback" class="mt-2 small"></div>
+                                </form>
                                 <div class="mb-3">
                                     <h3 class="h6">Connection Status:</h3>
                                     {% if vmix_connected %}
@@ -59,5 +69,52 @@
             </div>
         </div>
     </div>
+    <script>
+        document.getElementById('vmixConnectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const feedbackEl = document.getElementById('connectionFeedback');
+            const statusEl = document.querySelector('.badge');
+            const inputListEl = document.querySelector('.list-group');
+            
+            try {
+                feedbackEl.textContent = 'Connecting...';
+                feedbackEl.className = 'mt-2 small text-info';
+                
+                const response = await fetch('/connect_vmix', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        vmix_ip: document.getElementById('vmixIp').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Update connection status
+                statusEl.className = data.connected ? 'badge bg-success' : 'badge bg-danger';
+                statusEl.textContent = data.connected ? 'Connected' : 'Disconnected';
+                
+                // Update feedback message
+                feedbackEl.textContent = data.message;
+                feedbackEl.className = `mt-2 small ${data.connected ? 'text-success' : 'text-danger'}`;
+                
+                // Update input list if connected
+                if (data.connected && data.inputs) {
+                    if (inputListEl) {
+                        inputListEl.innerHTML = data.inputs.map(input => 
+                            `<li class="list-group-item">${input.name}</li>`
+                        ).join('');
+                    }
+                }
+            } catch (error) {
+                feedbackEl.textContent = 'Connection failed. Please try again.';
+                feedbackEl.className = 'mt-2 small text-danger';
+                statusEl.className = 'badge bg-danger';
+                statusEl.textContent = 'Disconnected';
+            }
+        });
+    </script>
 </body>
 </html>
