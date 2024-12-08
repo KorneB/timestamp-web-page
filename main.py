@@ -14,6 +14,17 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev-key-timestamp"
 # Default vMix configuration
 DEFAULT_VMIX_IP = "localhost:8088"
 current_vmix_ip = DEFAULT_VMIX_IP
+# Dutch weekday mapping
+DUTCH_WEEKDAYS = {
+    'Monday': 'maandag',
+    'Tuesday': 'dinsdag',
+    'Wednesday': 'woensdag',
+    'Thursday': 'donderdag',
+    'Friday': 'vrijdag',
+    'Saturday': 'zaterdag',
+    'Sunday': 'zondag'
+}
+
 
 def get_vmix_api_url(ip=None):
     """Generate vMix API URL based on provided IP or current IP"""
@@ -37,20 +48,31 @@ def check_vmix_connection(ip=None):
 def get_vmix_inputs(ip=None):
     """Get list of inputs from vMix at the given IP"""
     try:
-        api_url = get_vmix_api_url(ip)
-        response = requests.get(api_url, params={"function": "listinputs"}, timeout=1)
-        if response.status_code == 200:
-            # Demo mode - return sample inputs
+        # In development/demo mode, always return sample inputs
+        if app.debug:
             logger.info("Demo mode: Returning sample vMix inputs")
             return [
                 {"name": "Camera 1 (Demo)"},
                 {"name": "Screen Capture (Demo)"},
                 {"name": "Media Player (Demo)"}
             ]
+            
+        api_url = get_vmix_api_url(ip)
+        response = requests.get(api_url, params={"function": "listinputs"}, timeout=1)
+        if response.status_code == 200:
+            # Parse real vMix inputs here
+            return []  # TODO: Implement actual vMix input parsing
         logger.warning(f"vMix API returned status code: {response.status_code}")
         return []
     except requests.RequestException as e:
         logger.warning(f"Unable to fetch vMix inputs from {ip or current_vmix_ip}: {str(e)}")
+        if app.debug:
+            logger.info("Demo mode: Returning sample vMix inputs despite connection error")
+            return [
+                {"name": "Camera 1 (Demo)"},
+                {"name": "Screen Capture (Demo)"},
+                {"name": "Media Player (Demo)"}
+            ]
         return []
 
 def get_file_modification_time():
@@ -75,7 +97,7 @@ def index():
     return render_template('index.html',
                          current_time=current_time,
                          mod_time=mod_time,
-                         weekday=current_time.strftime('%A'),
+                         weekday=DUTCH_WEEKDAYS[current_time.strftime('%A')],
                          vmix_connected=vmix_connected,
                          vmix_inputs=vmix_inputs,
                          vmix_ip=current_vmix_ip)
