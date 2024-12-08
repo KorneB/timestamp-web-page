@@ -36,24 +36,83 @@ def check_vmix_connection(ip=None):
     """Check if vMix is running and accessible at the given IP"""
     try:
         api_url = get_vmix_api_url(ip)
-        response = requests.get(api_url, timeout=1)
+        response = requests.get(api_url, timeout=2)
         if response.status_code == 200:
             # Try to parse XML to ensure it's a valid vMix response
             ET.fromstring(response.content)
             return True
+        logger.warning(f"vMix API returned unexpected status code: {response.status_code}")
         return False
     except ET.ParseError as e:
         logger.error(f"Invalid vMix API response format from {ip or current_vmix_ip}: {str(e)}")
         return False
-    except requests.RequestException as e:
-        logger.error(f"vMix connection not available at {ip or current_vmix_ip}: {str(e)}")
+    except requests.ConnectionError:
+        logger.warning(f"Could not connect to vMix at {ip or current_vmix_ip}.")
+        if app.debug:
+            logger.info("Demo mode: vMix connection not available")
+            return True
         return False
+    except requests.Timeout:
+        logger.warning(f"Connection to vMix at {ip or current_vmix_ip} timed out.")
+        if app.debug:
+            logger.info("Demo mode: vMix connection timed out")
+            return True
+        return False
+    except requests.RequestException as e:
+        logger.error(f"vMix connection error at {ip or current_vmix_ip}: {str(e)}")
+        if app.debug:
+            logger.info("Demo mode: vMix connection error")
+            return True
+        return False
+
+def get_demo_inputs():
+    """Return sample vMix inputs for demo mode"""
+    return [
+        {
+            "number": 1,
+            "name": "Camera 1",
+            "short_title": "CAM1",
+            "type": "Camera",
+            "state": "Live",
+            "position": "0,0,1920,1080",
+            "loop": "False",
+            "selected": True,
+            "preview": False
+        },
+        {
+            "number": 2,
+            "name": "PowerPoint Presentation",
+            "short_title": "PPT",
+            "type": "PowerPoint",
+            "state": "Stopped",
+            "position": "0,0,1920,1080",
+            "loop": "True",
+            "selected": False,
+            "preview": True
+        },
+        {
+            "number": 3,
+            "name": "Video Clip",
+            "short_title": "VID",
+            "type": "Video",
+            "state": "Paused",
+            "position": "0,0,1920,1080",
+            "loop": "True",
+            "selected": False,
+            "preview": False
+        }
+    ]
 
 def get_vmix_inputs(ip=None):
     """Get list of inputs from vMix at the given IP"""
     try:
+        # In development/demo mode when vMix is not accessible, return sample inputs
+        if app.debug and not check_vmix_connection(ip):
+            logger.info("Demo mode: Returning sample vMix inputs")
+            return get_demo_inputs()
+            
         api_url = get_vmix_api_url(ip)
-        response = requests.get(api_url, timeout=1)
+        response = requests.get(api_url, timeout=2)
         if response.status_code == 200:
             # Parse XML response
             root = ET.fromstring(response.content)
