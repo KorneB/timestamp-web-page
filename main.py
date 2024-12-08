@@ -65,35 +65,44 @@ def get_demo_inputs():
     """Return sample vMix inputs for demo mode"""
     return [
         {
-            "number": 1,
+            "key": "5f5639f7-58ac-42f3-bf4f-44e20e6150fe",
+            "number": "1",
             "name": "Camera 1",
             "short_title": "CAM1",
             "type": "Camera",
             "state": "Live",
-            "position": "0,0,1920,1080",
+            "position": "0",
+            "duration": "0",
             "loop": "False",
+            "text_content": "Camera 1",
             "selected": True,
             "preview": False
         },
         {
-            "number": 2,
+            "key": "7a8b9c0d-1e2f-3g4h-5i6j-7k8l9m0n1o2p",
+            "number": "2",
             "name": "PowerPoint Presentation",
             "short_title": "PPT",
             "type": "PowerPoint",
             "state": "Stopped",
-            "position": "0,0,1920,1080",
+            "position": "0",
+            "duration": "0",
             "loop": "True",
+            "text_content": "PowerPoint Presentation",
             "selected": False,
             "preview": True
         },
         {
-            "number": 3,
+            "key": "3q4r5s6t-7u8v-9w0x-1y2z-3a4b5c6d7e8f",
+            "number": "3",
             "name": "Video Clip",
             "short_title": "VID",
             "type": "Video",
             "state": "Paused",
-            "position": "0,0,1920,1080",
+            "position": "0",
+            "duration": "300",
             "loop": "True",
+            "text_content": "Video Clip",
             "selected": False,
             "preview": False
         }
@@ -113,20 +122,32 @@ def get_vmix_inputs(ip=None):
             # Parse XML response
             root = ET.fromstring(response.content)
             inputs = []
-            for idx, input_elem in enumerate(root.findall('.//input'), 1):
+            
+            # Get active and preview input numbers from root level
+            active_number = root.findtext('active')
+            preview_number = root.findtext('preview')
+            
+            for input_elem in root.findall('.//input'):
+                number = input_elem.get('number')
                 input_data = {
-                    "number": idx,
+                    "key": input_elem.get('key', ''),
+                    "number": number,
                     "name": input_elem.get('title', 'Untitled'),
                     "short_title": input_elem.get('shortTitle', ''),
                     "type": input_elem.get('type', 'Unknown'),
                     "state": input_elem.get('state', ''),
-                    "position": input_elem.get('position', ''),
+                    "position": input_elem.get('position', '0'),
+                    "duration": input_elem.get('duration', '0'),
                     "loop": input_elem.get('loop', 'False'),
-                    "selected": input_elem.get('selected', 'False') == 'True',
-                    "preview": input_elem.get('preview', 'False') == 'True'
+                    "text_content": input_elem.text or '',
+                    "selected": number == active_number,
+                    "preview": number == preview_number
                 }
                 inputs.append(input_data)
+                
+            logger.debug(f"Parsed {len(inputs)} inputs from vMix API")
             return inputs
+            
         logger.warning(f"vMix API returned status code: {response.status_code}")
         return []
     except ET.ParseError as e:
