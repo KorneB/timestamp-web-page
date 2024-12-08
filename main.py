@@ -15,6 +15,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev-key-timestamp"
 # Default vMix configuration
 DEFAULT_VMIX_IP = "localhost:8088"
 current_vmix_ip = DEFAULT_VMIX_IP
+demo_mode = True  # Default to demo mode in Replit
 # Dutch weekday mapping
 DUTCH_WEEKDAYS = {
     'Monday': 'maandag',
@@ -34,6 +35,10 @@ def get_vmix_api_url(ip=None):
 
 def check_vmix_connection(ip=None):
     """Check if vMix is running and accessible at the given IP"""
+    if demo_mode:
+        logger.info("Demo mode: Simulating successful vMix connection")
+        return True
+        
     try:
         api_url = get_vmix_api_url(ip)
         response = requests.get(api_url, timeout=2)
@@ -48,21 +53,12 @@ def check_vmix_connection(ip=None):
         return False
     except requests.ConnectionError:
         logger.warning(f"Could not connect to vMix at {ip or current_vmix_ip}.")
-        if app.debug:
-            logger.info("Demo mode: vMix connection not available")
-            return True
         return False
     except requests.Timeout:
         logger.warning(f"Connection to vMix at {ip or current_vmix_ip} timed out.")
-        if app.debug:
-            logger.info("Demo mode: vMix connection timed out")
-            return True
         return False
     except requests.RequestException as e:
         logger.error(f"vMix connection error at {ip or current_vmix_ip}: {str(e)}")
-        if app.debug:
-            logger.info("Demo mode: vMix connection error")
-            return True
         return False
 
 def get_demo_inputs():
@@ -106,8 +102,8 @@ def get_demo_inputs():
 def get_vmix_inputs(ip=None):
     """Get list of inputs from vMix at the given IP"""
     try:
-        # In development/demo mode when vMix is not accessible, return sample inputs
-        if app.debug and not check_vmix_connection(ip):
+        # Return sample inputs in demo mode
+        if demo_mode:
             logger.info("Demo mode: Returning sample vMix inputs")
             return get_demo_inputs()
             
@@ -167,6 +163,26 @@ def index():
                          vmix_inputs=vmix_inputs,
                          vmix_ip=current_vmix_ip)
 
+@app.route('/toggle_mode', methods=['POST'])
+def toggle_mode():
+    """Toggle between demo and live mode"""
+    global demo_mode
+    try:
+        data = request.get_json()
+        demo_mode = data.get('demo_mode', True)
+        
+        return jsonify({
+            'success': True,
+            'demo_mode': demo_mode,
+            'message': f'Switched to {"Demo" if demo_mode else "Live"} mode'
+        })
+    except Exception as e:
+        logger.error(f"Error toggling mode: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to toggle mode'
+        }), 500
+
 @app.route('/connect_vmix', methods=['POST'])
 def connect_vmix():
     """Handle vMix connection requests"""
@@ -210,4 +226,4 @@ def connect_vmix():
         }), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=True)
+    app.run(host='0.0.0.0', port=5050, debug=True, threaded=True)

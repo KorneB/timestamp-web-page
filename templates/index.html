@@ -12,6 +12,15 @@
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
+                <!-- Mode Toggle Switch -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="modeToggle" checked>
+                            <label class="form-check-label" for="modeToggle">Demo Mode / Live Mode</label>
+                        </div>
+                    </div>
+                </div>
                 <div class="card">
                     <div class="card-header">
                         <h1 class="text-center mb-0">Timestamp Information</h1>
@@ -100,6 +109,38 @@
         </div>
     </div>
     <script>
+        // Mode toggle handling
+        const modeToggle = document.getElementById('modeToggle');
+        
+        // Load saved mode preference
+        const savedMode = localStorage.getItem('demoMode');
+        modeToggle.checked = savedMode === null ? true : savedMode === 'true';
+        
+        modeToggle.addEventListener('change', async function() {
+            try {
+                const response = await fetch('/toggle_mode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        demo_mode: this.checked
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.setItem('demoMode', this.checked);
+                    // Refresh the page to update the vMix status
+                    window.location.reload();
+                } else {
+                    console.error('Failed to toggle mode:', data.message);
+                }
+            } catch (error) {
+                console.error('Error toggling mode:', error);
+            }
+        });
+
         document.getElementById('vmixConnectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const feedbackEl = document.getElementById('connectionFeedback');
