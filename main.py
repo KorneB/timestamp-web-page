@@ -58,11 +58,17 @@ def get_vmix_inputs(ip=None):
             # Parse XML response
             root = ET.fromstring(response.content)
             inputs = []
-            for input_elem in root.findall('.//input'):
+            for idx, input_elem in enumerate(root.findall('.//input'), 1):
                 input_data = {
+                    "number": idx,
                     "name": input_elem.get('title', 'Untitled'),
+                    "short_title": input_elem.get('shortTitle', ''),
                     "type": input_elem.get('type', 'Unknown'),
-                    "state": input_elem.get('state', 'Unknown')
+                    "state": input_elem.get('state', ''),
+                    "position": input_elem.get('position', ''),
+                    "loop": input_elem.get('loop', 'False'),
+                    "selected": input_elem.get('selected', 'False') == 'True',
+                    "preview": input_elem.get('preview', 'False') == 'True'
                 }
                 inputs.append(input_data)
             return inputs
