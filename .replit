@@ -27,11 +27,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "FLASK_APP=main.py FLASK_ENV=development python -m flask run --host=0.0.0.0 --port=5050"
 waitForPort = 5050
 
 [deployment]
-run = ["sh", "-c", "python main.py"]
+run = ["sh", "-c", "FLASK_APP=main.py FLASK_ENV=development python -m flask run --host=0.0.0.0 --port=5050"]
 
 [[ports]]
 localPort = 5000
