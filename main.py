@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import requests
+import xml.etree.ElementTree as ET
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -36,43 +37,42 @@ def check_vmix_connection(ip=None):
     try:
         api_url = get_vmix_api_url(ip)
         response = requests.get(api_url, timeout=1)
-        return response.status_code == 200
-    except requests.RequestException as e:
-        logger.debug(f"vMix connection not available at {ip or current_vmix_ip}: {str(e)}")
-        # In development/demo mode, always return True
-        if app.debug:
-            logger.info("Demo mode: Simulating successful vMix connection")
+        if response.status_code == 200:
+            # Try to parse XML to ensure it's a valid vMix response
+            ET.fromstring(response.content)
             return True
+        return False
+    except ET.ParseError as e:
+        logger.error(f"Invalid vMix API response format from {ip or current_vmix_ip}: {str(e)}")
+        return False
+    except requests.RequestException as e:
+        logger.error(f"vMix connection not available at {ip or current_vmix_ip}: {str(e)}")
         return False
 
 def get_vmix_inputs(ip=None):
     """Get list of inputs from vMix at the given IP"""
     try:
-        # In development/demo mode, always return sample inputs
-        if app.debug:
-            logger.info("Demo mode: Returning sample vMix inputs")
-            return [
-                {"name": "Camera 1 (Demo)"},
-                {"name": "Screen Capture (Demo)"},
-                {"name": "Media Player (Demo)"}
-            ]
-            
         api_url = get_vmix_api_url(ip)
-        response = requests.get(api_url, params={"function": "listinputs"}, timeout=1)
+        response = requests.get(api_url, timeout=1)
         if response.status_code == 200:
-            # Parse real vMix inputs here
-            return []  # TODO: Implement actual vMix input parsing
+            # Parse XML response
+            root = ET.fromstring(response.content)
+            inputs = []
+            for input_elem in root.findall('.//input'):
+                input_data = {
+                    "name": input_elem.get('title', 'Untitled'),
+                    "type": input_elem.get('type', 'Unknown'),
+                    "state": input_elem.get('state', 'Unknown')
+                }
+                inputs.append(input_data)
+            return inputs
         logger.warning(f"vMix API returned status code: {response.status_code}")
         return []
+    except ET.ParseError as e:
+        logger.error(f"Failed to parse vMix XML response from {ip or current_vmix_ip}: {str(e)}")
+        return []
     except requests.RequestException as e:
-        logger.warning(f"Unable to fetch vMix inputs from {ip or current_vmix_ip}: {str(e)}")
-        if app.debug:
-            logger.info("Demo mode: Returning sample vMix inputs despite connection error")
-            return [
-                {"name": "Camera 1 (Demo)"},
-                {"name": "Screen Capture (Demo)"},
-                {"name": "Media Player (Demo)"}
-            ]
+        logger.error(f"Unable to fetch vMix inputs from {ip or current_vmix_ip}: {str(e)}")
         return []
 
 def get_file_modification_time():
@@ -125,15 +125,15 @@ def connect_vmix():
             logger.info(f"Successfully connected to vMix at {new_ip}")
             return jsonify({
                 'connected': True,
-                'message': f'Demo Mode: Connected to vMix at {new_ip}',
+                'message': f'Successfully connected to vMix at {new_ip}',
                 'inputs': inputs
             })
         else:
             logger.warning(f"Failed to connect to vMix at {new_ip}")
             return jsonify({
-                'connected': True,  # Demo mode, always show as connected
-                'message': f'Demo Mode: Simulating connection to {new_ip}',
-                'inputs': get_vmix_inputs(new_ip)  # Return demo inputs
+                'connected': False,
+                'message': f'Could not connect to vMix at {new_ip}. Please check if vMix is running and accessible.',
+                'inputs': []
             })
             
     except Exception as e:
