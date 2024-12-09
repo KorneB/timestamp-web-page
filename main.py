@@ -249,26 +249,29 @@ def connect_vmix():
             current_vmix_ip = new_ip
             inputs = get_vmix_inputs(new_ip)
             logger.info(f"Successfully connected to vMix at {new_ip}")
-            return jsonify({
+            response_data = {
                 'connected': True,
                 'message': f'Successfully connected to vMix at {new_ip}',
                 'inputs': inputs
-            })
+            }
+            return jsonify(response_data)
         else:
             logger.warning(f"Failed to connect to vMix at {new_ip}")
-            return jsonify({
+            response_data = {
                 'connected': False,
                 'message': f'Could not connect to vMix at {new_ip}. Please check if vMix is running and accessible.',
                 'inputs': []
-            })
+            }
+            return jsonify(response_data)
             
     except Exception as e:
         logger.error(f"Error connecting to vMix: {str(e)}")
-        return jsonify({
+        response_data = {
             'connected': False,
             'message': 'An error occurred while trying to connect to vMix.',
             'inputs': []
-        }), 500
+        }
+        return jsonify(response_data), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True, threaded=True)
