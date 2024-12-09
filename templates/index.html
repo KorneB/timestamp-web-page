@@ -118,18 +118,19 @@
         
         // Load saved mode preference (!checked = Demo Mode, checked = Live Mode)
         const savedMode = localStorage.getItem('demoMode');
-        modeToggle.checked = savedMode === null ? false : savedMode === 'true';
+        // Initialize to Demo Mode (unchecked) by default
+        modeToggle.checked = savedMode === null ? false : savedMode === 'false';
         
-        function updateModeText(isLiveMode) {
+        function updateModeText(isDemoMode) {
             const demoText = document.getElementById('demoModeText');
             const liveText = document.getElementById('liveModeText');
             
-            if (isLiveMode) {
-                demoText.classList.add('text-muted');
-                liveText.classList.remove('text-muted');
-            } else {
+            if (isDemoMode) {
                 demoText.classList.remove('text-muted');
                 liveText.classList.add('text-muted');
+            } else {
+                demoText.classList.add('text-muted');
+                liveText.classList.remove('text-muted');
             }
         }
 
@@ -138,21 +139,21 @@
         
         modeToggle.addEventListener('change', async function() {
             try {
-                const isLiveMode = this.checked;
+                const isDemoMode = !this.checked;  // Unchecked = Demo Mode (left), Checked = Live Mode (right)
                 const response = await fetch('/toggle_mode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        demo_mode: !isLiveMode
+                        demo_mode: isDemoMode
                     })
                 });
                 
                 const data = await response.json();
                 if (data.success) {
-                    localStorage.setItem('demoMode', isLiveMode);
-                    updateModeText(isLiveMode);
+                    localStorage.setItem('demoMode', isDemoMode);
+                    updateModeText(isDemoMode);
                     // Refresh the page to update the vMix status
                     window.location.reload();
                 } else {
