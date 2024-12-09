@@ -6,6 +6,7 @@
     <title>Timestamp POC</title>
     <!-- Replit Bootstrap Theme -->
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -54,6 +55,9 @@
                                                value="{{ vmix_ip|default('localhost:8088') }}"
                                                required>
                                         <button type="submit" class="btn btn-primary">Connect</button>
+                                        <button type="button" id="refreshButton" class="btn {% if vmix_connected %}btn-success{% else %}btn-outline-secondary{% endif %}" {% if not vmix_connected %}disabled{% endif %}>
+                                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                                        </button>
                                     </div>
                                     <div id="connectionFeedback" class="mt-2 small"></div>
                                 </form>
@@ -194,6 +198,18 @@
                 statusEl.className = data.connected ? 'badge bg-success' : 'badge bg-danger';
                 statusEl.textContent = data.connected ? 'Connected' : 'Disconnected';
                 
+                // Update refresh button state
+                const refreshButton = document.getElementById('refreshButton');
+                if (data.connected) {
+                    refreshButton.disabled = false;
+                    refreshButton.classList.remove('btn-outline-secondary');
+                    refreshButton.classList.add('btn-success');
+                } else {
+                    refreshButton.disabled = true;
+                    refreshButton.classList.remove('btn-success');
+                    refreshButton.classList.add('btn-outline-secondary');
+                }
+                
                 // Update feedback message
                 feedbackEl.textContent = data.message;
                 feedbackEl.className = `mt-2 small ${data.connected ? 'text-success' : 'text-danger'}`;
@@ -229,6 +245,81 @@
                 feedbackEl.className = 'mt-2 small text-danger';
                 statusEl.className = 'badge bg-danger';
                 statusEl.textContent = 'Disconnected';
+            }
+        });
+
+        // Handle refresh button click
+        document.getElementById('refreshButton').addEventListener('click', async function() {
+            if (this.disabled) return;
+            
+            const feedbackEl = document.getElementById('connectionFeedback');
+            const vmixIp = document.getElementById('vmixIp').value;
+            
+            try {
+                feedbackEl.textContent = 'Refreshing input list...';
+                feedbackEl.className = 'mt-2 small text-info';
+                
+                const response = await fetch('/connect_vmix', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        vmix_ip: vmixIp
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.connected) {
+                    // Keep the button highlighted and enabled
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-success');
+                    this.disabled = false;
+                    
+                    if (data.inputs) {
+                        const inputListEl = document.querySelector('.list-group');
+                        if (inputListEl) {
+                            inputListEl.innerHTML = data.inputs.map(input => `
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge bg-secondary me-2">${input.number}</span>
+                                            <strong>${input.name}</strong>
+                                            ${input.short_title ? `<small class="text-muted ms-2">(${input.short_title})</small>` : ''}
+                                        </div>
+                                        <div>
+                                            ${input.selected ? '<span class="badge bg-success me-1">Active</span>' : ''}
+                                            ${input.preview ? '<span class="badge bg-info me-1">Preview</span>' : ''}
+                                            <span class="badge bg-primary">${input.type}</span>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        ${input.position ? `<span class="me-3">Position: ${input.position}</span>` : ''}
+                                        ${input.loop === 'True' ? '<span class="badge bg-warning text-dark me-2">Loop</span>' : ''}
+                                        ${input.state ? `<span>State: ${input.state}</span>` : ''}
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                        feedbackEl.textContent = 'Input list refreshed successfully';
+                        feedbackEl.className = 'mt-2 small text-success';
+                    }
+                } else {
+                    // Reset button state if connection lost
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-secondary');
+                    this.disabled = true;
+                    feedbackEl.textContent = data.message;
+                    feedbackEl.className = 'mt-2 small text-danger';
+                }
+            } catch (error) {
+                // Reset button state on error
+                this.classList.remove('btn-success');
+                this.classList.add('btn-outline-secondary');
+                this.disabled = true;
+                feedbackEl.textContent = 'Failed to refresh input list. Please try again.';
+                feedbackEl.className = 'mt-2 small text-danger';
             }
         });
     </script>
