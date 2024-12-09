@@ -15,12 +15,12 @@
                 <!-- Mode Toggle Switch -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div class="form-check form-switch" style="flex-direction: row-reverse;">
-                            <input class="form-check-input ms-2" type="checkbox" role="switch" id="modeToggle">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input me-2" type="checkbox" role="switch" id="modeToggle">
                             <div class="d-flex align-items-center gap-2">
-                                <span id="liveModeText">Live Mode</span>
+                                <span id="demoModeText">Demo Mode</span>
                                 <span class="text-muted">/</span>
-                                <span id="demoModeText" class="text-muted">Demo Mode</span>
+                                <span id="liveModeText" class="text-muted">Live Mode</span>
                             </div>
                         </div>
                     </div>
@@ -116,20 +116,20 @@
         // Mode toggle handling
         const modeToggle = document.getElementById('modeToggle');
         
-        // Load saved mode preference
+        // Load saved mode preference (!checked = Demo Mode, checked = Live Mode)
         const savedMode = localStorage.getItem('demoMode');
-        modeToggle.checked = savedMode === null ? true : savedMode === 'false';
+        modeToggle.checked = savedMode === null ? false : savedMode === 'true';
         
         function updateModeText(isLiveMode) {
             const demoText = document.getElementById('demoModeText');
             const liveText = document.getElementById('liveModeText');
             
             if (isLiveMode) {
-                liveText.classList.remove('text-muted');
                 demoText.classList.add('text-muted');
+                liveText.classList.remove('text-muted');
             } else {
-                liveText.classList.add('text-muted');
                 demoText.classList.remove('text-muted');
+                liveText.classList.add('text-muted');
             }
         }
 
