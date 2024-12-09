@@ -118,7 +118,7 @@
         
         // Load saved mode preference
         const savedMode = localStorage.getItem('demoMode');
-        modeToggle.checked = savedMode === null ? true : savedMode === 'true';
+        modeToggle.checked = savedMode === null ? true : savedMode === 'false';
         
         function updateModeText(isLiveMode) {
             const demoText = document.getElementById('demoModeText');
