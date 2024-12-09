@@ -5,7 +5,7 @@ const xml2js = require('xml2js');
 const moment = require('moment');
 
 const app = express();
-const port = 5050;
+const port = 5051;
 
 // Dutch weekday mapping
 const DUTCH_WEEKDAYS = {
@@ -20,13 +20,19 @@ const DUTCH_WEEKDAYS = {
 
 // Middleware
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Enable body parsing
+app.use(express.urlencoded({ extended: true }));
 
 // Global state
 let currentVmixIp = 'localhost:8088';
 let demoMode = true;
+
+// Set secret key for session if needed
+app.set('secret_key', process.env.SECRET_KEY || 'dev-key-timestamp');
 
 // Helper functions
 const getVmixApiUrl = (ip = null) => {
@@ -247,20 +253,43 @@ app.post('/connect_vmix', async (req, res) => {
 });
 
 function startServer(retryPort = port) {
-    const server = app.listen(retryPort, '0.0.0.0')
-        .on('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
-                console.log(`Port ${retryPort} is busy, trying ${retryPort + 1}...`);
-                server.close();
-                startServer(retryPort + 1);
-            } else {
-                console.error('Server error:', err);
-            }
-        })
-        .on('listening', () => {
-            const actualPort = server.address().port;
-            console.log(`Server running at http://0.0.0.0:${actualPort}`);
+    try {
+        console.log(`Attempting to start server on port ${retryPort}...`);
+        
+        const server = app.listen(retryPort, '0.0.0.0')
+            .on('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    console.log(`Port ${retryPort} is busy, trying ${retryPort + 1}...`);
+                    server.close();
+                    startServer(retryPort + 1);
+                } else {
+                    console.error('Server startup error:', err);
+                    process.exit(1);
+                }
+            })
+            .on('listening', () => {
+                const actualPort = server.address().port;
+                console.log('Server initialization complete');
+                console.log(`View engine: ${app.get('view engine')}`);
+                console.log(`Views directory: ${app.get('views')}`);
+                console.log(`Public directory: ${path.join(__dirname, 'public')}`);
+                console.log(`Server running at http://0.0.0.0:${actualPort}`);
+            });
+            
+        // Handle process termination
+        process.on('SIGTERM', () => {
+            console.log('SIGTERM received. Closing server...');
+            server.close(() => {
+                console.log('Server closed');
+                process.exit(0);
+            });
         });
+    } catch (error) {
+        console.error('Fatal error starting server:', error);
+        process.exit(1);
+    }
 }
 
+// Initialize server
+console.log('Starting server initialization...');
 startServer();

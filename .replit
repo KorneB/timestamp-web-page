@@ -28,7 +28,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node server.js"
-waitForPort = 5050
+waitForPort = 5051
 
 [deployment]
 run = ["sh", "-c", "node server.js"]
