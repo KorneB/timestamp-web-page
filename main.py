@@ -15,7 +15,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "dev-key-timestamp"
 # Default vMix configuration
 DEFAULT_VMIX_IP = "localhost:8088"
 current_vmix_ip = DEFAULT_VMIX_IP
-demo_mode = True  # Default to demo mode in Replit
+demo_mode = True  # Default to demo mode for better initial experience
 # Dutch weekday mapping
 DUTCH_WEEKDAYS = {
     'Monday': 'maandag',
@@ -191,12 +191,14 @@ def index():
     mod_time = get_file_modification_time()
     
     # Handle connection status and inputs based on mode
+    vmix_connected = check_vmix_connection() if not demo_mode else True
+    vmix_inputs = []
+
+    # Only get inputs if we're in demo mode or actually connected in live mode
     if demo_mode:
-        vmix_connected = True
         vmix_inputs = get_demo_inputs()
-    else:
-        vmix_connected = check_vmix_connection()
-        vmix_inputs = get_vmix_inputs() if vmix_connected else []
+    elif vmix_connected:
+        vmix_inputs = get_vmix_inputs()
     
     return render_template('index.html',
                          current_time=current_time,
@@ -212,7 +214,7 @@ def toggle_mode():
     global demo_mode
     try:
         data = request.get_json()
-        demo_mode = data.get('demo_mode', True)
+        demo_mode = data.get('demo_mode', False)
         
         return jsonify({
             'success': True,

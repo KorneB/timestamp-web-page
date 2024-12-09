@@ -15,12 +15,12 @@
                 <!-- Mode Toggle Switch -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="modeToggle" checked>
+                        <div class="form-check form-switch" style="flex-direction: row-reverse;">
+                            <input class="form-check-input ms-2" type="checkbox" role="switch" id="modeToggle">
                             <div class="d-flex align-items-center gap-2">
-                                <span id="demoModeText">Demo Mode</span>
+                                <span id="liveModeText">Live Mode</span>
                                 <span class="text-muted">/</span>
-                                <span id="liveModeText" class="text-muted">Live Mode</span>
+                                <span id="demoModeText" class="text-muted">Demo Mode</span>
                             </div>
                         </div>
                     </div>
@@ -120,16 +120,16 @@
         const savedMode = localStorage.getItem('demoMode');
         modeToggle.checked = savedMode === null ? true : savedMode === 'true';
         
-        function updateModeText(isDemoMode) {
+        function updateModeText(isLiveMode) {
             const demoText = document.getElementById('demoModeText');
             const liveText = document.getElementById('liveModeText');
             
-            if (isDemoMode) {
-                demoText.classList.remove('text-muted');
-                liveText.classList.add('text-muted');
-            } else {
-                demoText.classList.add('text-muted');
+            if (isLiveMode) {
                 liveText.classList.remove('text-muted');
+                demoText.classList.add('text-muted');
+            } else {
+                liveText.classList.add('text-muted');
+                demoText.classList.remove('text-muted');
             }
         }
 
@@ -138,27 +138,32 @@
         
         modeToggle.addEventListener('change', async function() {
             try {
+                const isLiveMode = this.checked;
                 const response = await fetch('/toggle_mode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        demo_mode: this.checked
+                        demo_mode: !isLiveMode
                     })
                 });
                 
                 const data = await response.json();
                 if (data.success) {
-                    localStorage.setItem('demoMode', this.checked);
-                    updateModeText(this.checked);
+                    localStorage.setItem('demoMode', isLiveMode);
+                    updateModeText(isLiveMode);
                     // Refresh the page to update the vMix status
                     window.location.reload();
                 } else {
                     console.error('Failed to toggle mode:', data.message);
+                    // Revert the toggle if the server request failed
+                    this.checked = !isLiveMode;
                 }
             } catch (error) {
                 console.error('Error toggling mode:', error);
+                // Revert the toggle on error
+                this.checked = !this.checked;
             }
         });
 
