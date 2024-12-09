@@ -17,7 +17,11 @@
                     <div class="card-body">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" role="switch" id="modeToggle" checked>
-                            <label class="form-check-label" for="modeToggle">Demo Mode / Live Mode</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="demoModeText">Demo Mode</span>
+                                <span class="text-muted">/</span>
+                                <span id="liveModeText" class="text-muted">Live Mode</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -116,6 +120,22 @@
         const savedMode = localStorage.getItem('demoMode');
         modeToggle.checked = savedMode === null ? true : savedMode === 'true';
         
+        function updateModeText(isDemoMode) {
+            const demoText = document.getElementById('demoModeText');
+            const liveText = document.getElementById('liveModeText');
+            
+            if (isDemoMode) {
+                demoText.classList.remove('text-muted');
+                liveText.classList.add('text-muted');
+            } else {
+                demoText.classList.add('text-muted');
+                liveText.classList.remove('text-muted');
+            }
+        }
+
+        // Initialize mode text based on saved preference
+        updateModeText(modeToggle.checked);
+        
         modeToggle.addEventListener('change', async function() {
             try {
                 const response = await fetch('/toggle_mode', {
@@ -131,6 +151,7 @@
                 const data = await response.json();
                 if (data.success) {
                     localStorage.setItem('demoMode', this.checked);
+                    updateModeText(this.checked);
                     // Refresh the page to update the vMix status
                     window.location.reload();
                 } else {

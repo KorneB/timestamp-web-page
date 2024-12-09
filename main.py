@@ -45,12 +45,17 @@ def check_vmix_connection(ip=None):
         logger.info(f"Live mode: Attempting to connect to vMix at {api_url}")
         
         response = requests.get(api_url, timeout=2)
+        
+        # Only consider connected if we get 200 status and valid XML
         if response.status_code == 200:
-            # Try to parse XML to ensure it's a valid vMix response
-            ET.fromstring(response.content)
-            logger.info(f"Successfully connected to vMix at {ip or current_vmix_ip}")
-            return True
-            
+            try:
+                ET.fromstring(response.content)
+                logger.info(f"Successfully connected to vMix at {ip or current_vmix_ip}")
+                return True
+            except ET.ParseError as e:
+                logger.error(f"Invalid vMix API response format: {str(e)}")
+                return False
+                
         logger.warning(f"vMix API returned unexpected status code: {response.status_code}")
         return False
         
@@ -117,13 +122,20 @@ def get_demo_inputs():
 def get_vmix_inputs(ip=None):
     """Get list of inputs from vMix at the given IP"""
     try:
-        # Return sample inputs in demo mode
+        # Return demo inputs in demo mode
         if demo_mode:
             logger.info("Demo mode: Returning sample vMix inputs")
             return get_demo_inputs()
             
+        # In live mode, check connection first
+        if not check_vmix_connection(ip):
+            logger.warning("Live mode: vMix not connected, returning empty input list")
+            return []
+            
+        # Only proceed with API call if connection is verified
         api_url = get_vmix_api_url(ip)
         response = requests.get(api_url, timeout=2)
+        
         if response.status_code == 200:
             # Parse XML response
             root = ET.fromstring(response.content)
@@ -178,9 +190,13 @@ def index():
     current_time = datetime.datetime.now()
     mod_time = get_file_modification_time()
     
-    # Get vMix connection status and inputs
-    vmix_connected = check_vmix_connection()
-    vmix_inputs = get_vmix_inputs() if vmix_connected else []
+    # Handle connection status and inputs based on mode
+    if demo_mode:
+        vmix_connected = True
+        vmix_inputs = get_demo_inputs()
+    else:
+        vmix_connected = check_vmix_connection()
+        vmix_inputs = get_vmix_inputs() if vmix_connected else []
     
     return render_template('index.html',
                          current_time=current_time,
