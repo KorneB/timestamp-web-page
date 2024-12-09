@@ -54,6 +54,30 @@ The application runs in debug mode by default, which enables:
 - Detailed error pages
 - Debug logging
 
+## Testing vMix Integration
+
+### Local Testing
+
+1. **Demo Mode (No vMix Required)**
+   - The application starts in Demo mode by default
+   - Demo mode shows sample inputs without requiring a vMix connection
+   - Toggle between Demo/Live mode using the switch at the top
+
+2. **Live Mode (Local vMix Instance)**
+   - Start vMix on your local machine
+   - vMix API runs by default on `localhost:8088`
+   - In the application:
+     1. Switch to Live mode using the toggle
+     2. Enter `localhost:8088` in the vMix IP field
+     3. Click Connect to fetch actual inputs
+
+3. **Input List Features**
+   - Shows input number and name
+   - Displays short title if available
+   - Indicates active and preview states
+   - Shows input type (Camera, PowerPoint, etc.)
+   - Additional details: position, loop status, and state
+
 ## Contributing
 
 1. Fork the repository
