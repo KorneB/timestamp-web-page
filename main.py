@@ -38,21 +38,27 @@ def check_vmix_connection(ip=None):
     if demo_mode:
         logger.info("Demo mode: Simulating successful vMix connection")
         return True
-        
+
+    # In live mode, attempt actual connection
     try:
         api_url = get_vmix_api_url(ip)
+        logger.info(f"Live mode: Attempting to connect to vMix at {api_url}")
+        
         response = requests.get(api_url, timeout=2)
         if response.status_code == 200:
             # Try to parse XML to ensure it's a valid vMix response
             ET.fromstring(response.content)
+            logger.info(f"Successfully connected to vMix at {ip or current_vmix_ip}")
             return True
+            
         logger.warning(f"vMix API returned unexpected status code: {response.status_code}")
         return False
+        
     except ET.ParseError as e:
         logger.error(f"Invalid vMix API response format from {ip or current_vmix_ip}: {str(e)}")
         return False
     except requests.ConnectionError:
-        logger.warning(f"Could not connect to vMix at {ip or current_vmix_ip}.")
+        logger.warning(f"Could not connect to vMix at {ip or current_vmix_ip}. Please check if vMix is running and accessible.")
         return False
     except requests.Timeout:
         logger.warning(f"Connection to vMix at {ip or current_vmix_ip} timed out.")
