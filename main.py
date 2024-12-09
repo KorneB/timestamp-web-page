@@ -125,18 +125,22 @@ def get_vmix_inputs(ip=None):
         # Return demo inputs in demo mode
         if demo_mode:
             logger.info("Demo mode: Returning sample vMix inputs")
-            return get_demo_inputs()
+            return get_demo_inputs(), "Demo mode - no raw response available"
             
         # In live mode, check connection first
         if not check_vmix_connection(ip):
             logger.warning("Live mode: vMix not connected, returning empty input list")
-            return []
+            return [], "Not connected to vMix"
             
         # Only proceed with API call if connection is verified
         api_url = get_vmix_api_url(ip)
         response = requests.get(api_url, timeout=2)
         
+        raw_response = "Failed to get response"
+        
         if response.status_code == 200:
+            raw_response = response.text
+            logger.debug(f"Raw vMix API response: {raw_response}")
             # Parse XML response
             root = ET.fromstring(response.content)
             inputs = []
@@ -164,16 +168,18 @@ def get_vmix_inputs(ip=None):
                 inputs.append(input_data)
                 
             logger.debug(f"Parsed {len(inputs)} inputs from vMix API")
-            return inputs
+            return inputs, raw_response
             
         logger.warning(f"vMix API returned status code: {response.status_code}")
-        return []
+        return [], raw_response
     except ET.ParseError as e:
-        logger.error(f"Failed to parse vMix XML response from {ip or current_vmix_ip}: {str(e)}")
-        return []
+        error_msg = f"Failed to parse vMix XML response from {ip or current_vmix_ip}: {str(e)}"
+        logger.error(error_msg)
+        return [], error_msg
     except requests.RequestException as e:
-        logger.error(f"Unable to fetch vMix inputs from {ip or current_vmix_ip}: {str(e)}")
-        return []
+        error_msg = f"Unable to fetch vMix inputs from {ip or current_vmix_ip}: {str(e)}"
+        logger.error(error_msg)
+        return [], error_msg
 
 def get_file_modification_time():
     """Get the modification time of this file"""
@@ -196,9 +202,9 @@ def index():
 
     # Only get inputs if we're in demo mode or actually connected in live mode
     if demo_mode:
-        vmix_inputs = get_demo_inputs()
+        vmix_inputs, _ = get_vmix_inputs()  # In demo mode, we don't need raw response
     elif vmix_connected:
-        vmix_inputs = get_vmix_inputs()
+        vmix_inputs, _ = get_vmix_inputs()  # We only need inputs for initial page load
     
     return render_template('index.html',
                          current_time=current_time,
@@ -247,12 +253,13 @@ def connect_vmix():
         
         if connected:
             current_vmix_ip = new_ip
-            inputs = get_vmix_inputs(new_ip)
+            inputs, raw_response = get_vmix_inputs(new_ip)
             logger.info(f"Successfully connected to vMix at {new_ip}")
             response_data = {
                 'connected': True,
                 'message': f'Successfully connected to vMix at {new_ip}',
-                'inputs': inputs
+                'inputs': inputs,
+                'raw_response': raw_response
             }
             return jsonify(response_data)
         else:

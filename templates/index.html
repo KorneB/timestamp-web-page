@@ -308,6 +308,16 @@
                         }
                         feedbackEl.textContent = 'Input list refreshed successfully';
                         feedbackEl.className = 'mt-2 small text-success';
+                        
+                        // Display raw API response for debugging
+                        if (data.raw_response) {
+                            const rawResponseEl = document.createElement('pre');
+                            rawResponseEl.className = 'mt-3 p-3 bg-dark text-light';
+                            rawResponseEl.style.maxHeight = '200px';
+                            rawResponseEl.style.overflow = 'auto';
+                            rawResponseEl.textContent = data.raw_response;
+                            feedbackEl.appendChild(rawResponseEl);
+                        }
                     }
                 } else {
                     // Reset button state if connection lost
