@@ -21,9 +21,45 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Python
+*.py
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytype/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+bin/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+venv/
+.venv/
+.python-version
+pyproject.toml
+poetry.lock
+requirements.txt
+
 # Replit specific
 .replit
 replit.nix
 .config/
 .upm/
 .cache/
+.pythonlibs/
