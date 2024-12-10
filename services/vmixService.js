@@ -5,7 +5,7 @@ class VMixService {
     constructor() {
         this.isDemo = true;
         this.parser = new xml2js.Parser();
-        this.baseUrl = 'http://localhost:8088/api';
+        this.baseUrl = 'http://172.30.3.1:8088/api';
     }
 
     async getConnectionStatus() {
