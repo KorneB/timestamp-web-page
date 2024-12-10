@@ -8,10 +8,21 @@ const parseString = util.promisify(xml2js.parseString);
 
 const app = express();
 
+// Debug logging for startup
+console.log('Starting server initialization...');
+console.log('Current directory:', __dirname);
+console.log('Available views:', path.join(__dirname, 'views'));
+
 // Configure logging
 const logRequest = (req, res, next) => {
     console.log(`${moment().format('YYYY-MM-DD HH:mm:ss')} - ${req.method} ${req.url}`);
     next();
+};
+
+// Basic error handler
+const errorHandler = (err, req, res, next) => {
+    console.error('Error occurred:', err);
+    res.status(500).json({ error: err.message });
 };
 
 // Middleware setup
@@ -20,15 +31,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Session configuration
+const session = require('express-session');
+app.use(session({
+    secret: process.env.SECRET_KEY || 'dev-key-timestamp',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }
+}));
+
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Trust proxy for accurate client IP behind reverse proxy
 app.set('trust proxy', true);
-
-// Set secret key
-app.set('secret_key', process.env.SECRET_KEY || 'dev-key-timestamp');
 
 // Global state
 let currentVmixIp = 'localhost:8088';
@@ -271,24 +288,27 @@ app.use((req, res) => {
     });
 });
 
-// Server startup with better error handling
-const startServer = async (port) => {
-    try {
-        await new Promise((resolve, reject) => {
-            const server = app.listen(port, '0.0.0.0', () => {
-                console.log(`Server running at http://0.0.0.0:${port}`);
-                resolve(server);
-            }).on('error', reject);
-        });
-    } catch (error) {
-        if (error.code === 'EADDRINUSE') {
-            console.log(`Port ${port} is in use, trying ${port + 1}`);
-            return startServer(port + 1);
-        }
-        console.error('Failed to start server:', error);
-        process.exit(1);
-    }
-};
-
 // Start the server
-startServer(process.env.PORT || 5051);
+const port = process.env.PORT || 5051;
+
+const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
+});
+
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use. Please try a different port.`);
+    } else {
+        console.error('Server error:', error);
+    }
+    process.exit(1);
+});
+
+// Handle process termination
+process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received. Closing server.');
+    server.close(() => {
+        console.log('Server closed.');
+        process.exit(0);
+    });
+});
