@@ -3,10 +3,19 @@ const path = require('path');
 const moment = require('moment');
 const axios = require('axios');
 const xml2js = require('xml2js');
+const util = require('util');
+const parseString = util.promisify(xml2js.parseString);
 
 const app = express();
 
+// Configure logging
+const logRequest = (req, res, next) => {
+    console.log(`${moment().format('YYYY-MM-DD HH:mm:ss')} - ${req.method} ${req.url}`);
+    next();
+};
+
 // Middleware setup
+app.use(logRequest);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -14,6 +23,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Trust proxy for accurate client IP behind reverse proxy
+app.set('trust proxy', true);
 
 // Set secret key
 app.set('secret_key', process.env.SECRET_KEY || 'dev-key-timestamp');
@@ -71,45 +83,43 @@ const checkVmixConnection = async (ip = null) => {
 };
 
 const getDemoInputs = () => {
-    return {
-        inputs: [
-            {
-                key: "5f5639f7-58ac-42f3-bf4f-44e20e6150fe",
-                number: "1",
-                name: "Camera 1",
-                short_title: "CAM1",
-                type: "Camera",
-                state: "Live",
-                position: "0",
-                duration: "0",
-                loop: "False",
-                text_content: "Camera 1",
-                selected: true,
-                preview: false
-            },
-            {
-                key: "7a8b9c0d-1e2f-3g4h-5i6j-7k8l9m0n1o2p",
-                number: "2",
-                name: "PowerPoint Presentation",
-                short_title: "PPT",
-                type: "PowerPoint",
-                state: "Stopped",
-                position: "0",
-                duration: "0",
-                loop: "True",
-                text_content: "PowerPoint Presentation",
-                selected: false,
-                preview: true
-            }
-        ]
-    };
+    return [
+        {
+            key: "5f5639f7-58ac-42f3-bf4f-44e20e6150fe",
+            number: "1",
+            name: "Camera 1",
+            short_title: "CAM1",
+            type: "Camera",
+            state: "Live",
+            position: "0",
+            duration: "0",
+            loop: "False",
+            text_content: "Camera 1",
+            selected: true,
+            preview: false
+        },
+        {
+            key: "7a8b9c0d-1e2f-3g4h-5i6j-7k8l9m0n1o2p",
+            number: "2",
+            name: "PowerPoint Presentation",
+            short_title: "PPT",
+            type: "PowerPoint",
+            state: "Stopped",
+            position: "0",
+            duration: "0",
+            loop: "True",
+            text_content: "PowerPoint Presentation",
+            selected: false,
+            preview: true
+        }
+    ];
 };
 
 const getVmixInputs = async (ip = null) => {
     try {
         if (demoMode) {
             console.log("Demo mode: Returning sample vMix inputs");
-            return getDemoInputs();
+            return { inputs: getDemoInputs(), raw_response: "Demo mode - no raw response available" };
         }
 
         if (!await checkVmixConnection(ip)) {
@@ -122,21 +132,24 @@ const getVmixInputs = async (ip = null) => {
         
         if (response.status === 200) {
             const result = await xml2js.parseStringPromise(response.data);
-            const inputsData = result.vmix.inputs[0].input || [];
+            const vmixData = result.vmix;
+            const inputsData = vmixData.inputs?.[0]?.input || [];
+            const activeNumber = vmixData.active?.[0];
+            const previewNumber = vmixData.preview?.[0];
             
             const inputs = inputsData.map(input => ({
                 key: input.$.key,
                 number: input.$.number,
-                name: input.$.title,
+                name: input.$.title || 'Untitled',
                 short_title: input.$.shortTitle || '',
-                type: input.$.type,
+                type: input.$.type || 'Unknown',
                 state: input.$.state || '',
                 position: input.$.position || '0',
                 duration: input.$.duration || '0',
                 loop: input.$.loop || 'False',
                 text_content: input._ || '',
-                selected: input.$.number === result.vmix.active[0],
-                preview: input.$.number === result.vmix.preview[0]
+                selected: input.$.number === activeNumber,
+                preview: input.$.number === previewNumber
             }));
 
             return { inputs, raw_response: response.data };
@@ -152,11 +165,23 @@ const getVmixInputs = async (ip = null) => {
 // Routes
 app.get('/', async (req, res, next) => {
     try {
+        // Get current time and weekday
         const currentTime = moment();
         const weekday = DUTCH_WEEKDAYS[currentTime.format('dddd')];
         
-        const vmixConnected = demoMode || await checkVmixConnection();
-        const { inputs: vmixInputs } = await getVmixInputs();
+        // Check vMix connection status based on mode
+        let vmixConnected = false;
+        let vmixInputs = [];
+        
+        if (demoMode) {
+            vmixConnected = true;
+            ({ inputs: vmixInputs } = await getVmixInputs());
+        } else {
+            vmixConnected = await checkVmixConnection();
+            if (vmixConnected) {
+                ({ inputs: vmixInputs } = await getVmixInputs());
+            }
+        }
         
         res.render('index', {
             current_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
@@ -166,6 +191,7 @@ app.get('/', async (req, res, next) => {
             vmix_ip: currentVmixIp
         });
     } catch (error) {
+        console.error('Error in index route:', error);
         next(error);
     }
 });
@@ -181,6 +207,7 @@ app.post('/toggle_mode', (req, res) => {
             message: `Switched to ${demoMode ? 'Demo' : 'Live'} mode`
         });
     } catch (error) {
+        console.error('Error toggling mode:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to toggle mode'
@@ -217,6 +244,7 @@ app.post('/connect_vmix', async (req, res) => {
             });
         }
     } catch (error) {
+        console.error('Error connecting to vMix:', error);
         res.status(500).json({
             connected: false,
             message: `Error: ${error.message}`,
@@ -227,9 +255,10 @@ app.post('/connect_vmix', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error:', err.message);
+    console.error('Stack:', err.stack);
     res.status(500).render('error', {
-        message: 'Something broke!',
+        message: 'Something went wrong!',
         error: process.env.NODE_ENV === 'development' ? err : {}
     });
 });
@@ -242,28 +271,24 @@ app.use((req, res) => {
     });
 });
 
-// Start server
-const startServer = (port = 5051) => {
+// Server startup with better error handling
+const startServer = async (port) => {
     try {
-        const server = app.listen(port, '0.0.0.0', () => {
-            console.log(`Server running at http://0.0.0.0:${port}`);
+        await new Promise((resolve, reject) => {
+            const server = app.listen(port, '0.0.0.0', () => {
+                console.log(`Server running at http://0.0.0.0:${port}`);
+                resolve(server);
+            }).on('error', reject);
         });
-
-        server.on('error', (error) => {
-            if (error.code === 'EADDRINUSE') {
-                console.log(`Port ${port} is in use, trying ${port + 1}`);
-                startServer(port + 1);
-            } else {
-                console.error('Server error:', error);
-                process.exit(1);
-            }
-        });
-
-        return server;
     } catch (error) {
-        console.error('Fatal error starting server:', error);
+        if (error.code === 'EADDRINUSE') {
+            console.log(`Port ${port} is in use, trying ${port + 1}`);
+            return startServer(port + 1);
+        }
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 };
 
-startServer();
+// Start the server
+startServer(process.env.PORT || 5051);
