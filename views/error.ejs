@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Timestamp POC</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="text-center mb-0">Error</h1>
+                    </div>
+                    <div class="card-body">
+                        <h2 class="h5 text-danger"><%= message %></h2>
+                        <% if (error.stack && process.env.NODE_ENV === 'development') { %>
+                            <pre class="mt-3 p-3 bg-dark text-light"><%= error.stack %></pre>
+                        <% } %>
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary">Return to Homepage</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
