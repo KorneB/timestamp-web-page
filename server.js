@@ -10,6 +10,7 @@ console.log('Starting server initialization...');
 console.log('Current directory:', __dirname);
 console.log('Views directory:', path.join(__dirname, 'views'));
 console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Port:', process.env.PORT || 5051);
 
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
