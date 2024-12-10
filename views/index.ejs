@@ -3,31 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timestamp POC</title>
+    <title><%= title %></title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card">
+                <!-- Time Information -->
+                <div class="card mb-4">
                     <div class="card-header">
-                        <h1 class="text-center mb-0">Timestamp Information</h1>
+                        <h2 class="h4 mb-0">Time Information</h2>
                     </div>
                     <div class="card-body">
-                        <div class="mb-4">
-                            <h2 class="h5">Current Time:</h2>
-                            <p class="lead"><%= current_time %></p>
+                        <div class="mb-3">
+                            <h3 class="h5">Current Time:</h3>
+                            <p class="lead" id="currentTime"><%= current_time %></p>
                         </div>
+                        <div>
+                            <h3 class="h5">Day of Week:</h3>
+                            <p class="lead" id="weekday"><%= weekday %></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- vMix Integration -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0">vMix Integration</h2>
+                        <div>
+                            <button id="refreshBtn" class="btn btn-outline-info me-2">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button id="toggleModeBtn" class="btn btn-outline-warning">
+                                <%= vmixStatus.mode %> Mode
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Connection Status -->
                         <div class="mb-4">
-                            <h2 class="h5">Day of Week:</h2>
-                            <p class="lead"><%= weekday %></p>
+                            <h3 class="h5">Connection Status:</h3>
+                            <div class="d-flex align-items-center">
+                                <div class="me-2" id="statusIndicator">
+                                    <i class="bi bi-<%= vmixStatus.connected ? 'check-circle-fill text-success' : 'x-circle-fill text-danger' %>"></i>
+                                </div>
+                                <span id="statusText" class="lead">
+                                    <%= vmixStatus.connected ? 'Connected' : 'Disconnected' %>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Input List -->
+                        <div class="mb-4">
+                            <h3 class="h5">Input List:</h3>
+                            <div class="list-group" id="inputList">
+                                <% vmixInputs.forEach(input => { %>
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h4 class="h6 mb-1">#<%= input.number %> - <%= input.title %></h4>
+                                                <small class="text-muted"><%= input.type %></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+
+                        <!-- Raw API Response -->
+                        <div>
+                            <h3 class="h5">Raw API Response:</h3>
+                            <pre id="rawResponse" class="bg-dark p-3 rounded" style="max-height: 200px; overflow-y: auto;"></pre>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Update time every second
+        setInterval(async () => {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString();
+            document.getElementById('weekday').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
+        }, 1000);
+
+        // vMix Integration
+        const refreshBtn = document.getElementById('refreshBtn');
+        const toggleModeBtn = document.getElementById('toggleModeBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const inputList = document.getElementById('inputList');
+        const rawResponse = document.getElementById('rawResponse');
+
+        async function updateVMixStatus() {
+            try {
+                const status = await fetch('/api/vmix/status').then(r => r.json());
+                statusIndicator.innerHTML = status.connected 
+                    ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                    : '<i class="bi bi-x-circle-fill text-danger"></i>';
+                statusText.textContent = status.connected ? 'Connected' : 'Disconnected';
+                toggleModeBtn.textContent = `${status.mode} Mode`;
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        async function updateInputList() {
+            try {
+                const inputs = await fetch('/api/vmix/inputs').then(r => r.json());
+                inputList.innerHTML = inputs.map(input => `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="h6 mb-1">#${input.number} - ${input.title}</h4>
+                                <small class="text-muted">${input.type}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error updating inputs:', error);
+            }
+        }
+
+        async function updateRawResponse() {
+            try {
+                const raw = await fetch('/api/vmix/raw').then(r => r.text());
+                rawResponse.textContent = raw;
+            } catch (error) {
+                console.error('Error updating raw response:', error);
+            }
+        }
+
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.querySelector('i').classList.add('bi-arrow-clockwise-animate');
+            await Promise.all([
+                updateVMixStatus(),
+                updateInputList(),
+                updateRawResponse()
+            ]);
+            setTimeout(() => {
+                refreshBtn.querySelector('i').classList.remove('bi-arrow-clockwise-animate');
+            }, 1000);
+        });
+
+        toggleModeBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/api/vmix/toggle-mode', { method: 'POST' });
+                await Promise.all([
+                    updateVMixStatus(),
+                    updateInputList(),
+                    updateRawResponse()
+                ]);
+            } catch (error) {
+                console.error('Error toggling mode:', error);
+            }
+        });
+    </script>
 </body>
 </html>
