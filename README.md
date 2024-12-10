@@ -1,88 +1,83 @@
-# Timestamp POC Web Application
+# Timestamp & vMix Integration Web Application
 
-A simple proof-of-concept web application that displays the current timestamp and last modification time of the application.
+A Node.js web application that displays current time, day of the week (with Dutch translations), and integrates with vMix for video production state management.
 
 ## Features
 
-- Displays current server time
-- Shows last modification time of the application
-- Responsive design using Bootstrap
-- Dark theme support
+- Real-time time display with Dutch weekday translations
+- vMix API integration
+  - Live/Demo mode toggle
+  - Input list display with detailed properties
+  - Connection status monitoring
+  - Raw API response viewing
+- Dark theme with Bootstrap styling
+- WebSocket-based real-time updates
 
 ## Prerequisites
 
-- Python 3.8 or higher
-- Flask
+- Node.js 18 or higher
+- npm (Node Package Manager)
 
 ## Installation
 
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd timestamp-poc
+   cd timestamp-vmix-app
    ```
 
 2. Install dependencies:
    ```bash
-   pip install flask
+   npm install
    ```
 
 ## Running the Application
 
-1. Start the Flask server:
+1. Start the Node.js server:
    ```bash
-   python main.py
+   node server.js
    ```
 
 2. Open your browser and navigate to:
    ```
-   http://localhost:5050
+   http://localhost:5051
    ```
 
 ## Project Structure
 
-- `main.py` - Flask application server
-- `templates/` - HTML templates
-  - `index.html` - Main page template
-- `static/` - Static assets
+- `server.js` - Express application server
+- `views/` - EJS templates
+  - `index.ejs` - Main page template
+  - `error.ejs` - Error page template
+- `public/` - Static assets
   - `style.css` - Custom styles
 
 ## Development
 
-The application runs in debug mode by default, which enables:
-- Auto-reload on code changes
-- Detailed error pages
-- Debug logging
+The application includes:
+- Auto-reload capability
+- Detailed error logging
+- Debug mode
+- Session management
 
-## Testing vMix Integration
+## vMix Integration Features
 
-### Local Testing
+### Demo Mode
+- Simulated vMix inputs
+- No actual vMix connection required
+- Perfect for testing and development
 
-1. **Demo Mode (No vMix Required)**
-   - The application starts in Demo mode by default
-   - Demo mode shows sample inputs without requiring a vMix connection
-   - Toggle between Demo/Live mode using the switch at the top
-
-2. **Live Mode (Local vMix Instance)**
-   - Start vMix on your local machine
-   - vMix API runs by default on `localhost:8088`
-   - In the application:
-     1. Switch to Live mode using the toggle
-     2. Enter `localhost:8088` in the vMix IP field
-     3. Click Connect to fetch actual inputs
-
-3. **Input List Features**
-   - Shows input number and name
-   - Displays short title if available
-   - Indicates active and preview states
-   - Shows input type (Camera, PowerPoint, etc.)
-   - Additional details: position, loop status, and state
+### Live Mode
+- Real vMix API integration
+- Connection status monitoring
+- Live input list updates
+- Raw API response viewing
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
 5. Open a Pull Request
    
