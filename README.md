@@ -44,10 +44,10 @@ Make sure these ports are available and not blocked by your firewall.
 ### Step 1: Clone the Repository
 ```bash
 # HTTPS clone (recommended)
-git clone https://github.com/KorneB/vMix_testpage.git
+git clone https://github.com/KorneB/timestamp-web-page.git
 
 # SSH clone (if configured)
-git clone git@github.com:KorneB/vMix_testpage.git
+git clone git@github.com:KorneB/timestamp-web-page.git
 
 cd vMix_testpage
 ```
@@ -57,7 +57,7 @@ cd vMix_testpage
 
 ```bash
 # Navigate to project directory (if not already there)
-cd vMix_testpage
+cd timestamp-web-page
 
 # Install project dependencies
 npm install
@@ -219,7 +219,7 @@ If you see "Cannot find module" errors:
 ## Project Structure
 
 ```
-vMix_testpage/
+timestamp-web-page/
 ├── server.js          # Express application server
 ├── services/
 │   └── vmixService.js # vMix API integration
