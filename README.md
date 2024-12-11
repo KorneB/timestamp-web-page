@@ -52,14 +52,27 @@ git clone git@github.com:KorneB/vMix_testpage.git
 cd vMix_testpage
 ```
 
-### Step 2: Install Dependencies
+### Step 2: Install Dependencies (REQUIRED)
+⚠️ **Important**: You must install dependencies before running the server!
+
 ```bash
+# Navigate to project directory (if not already there)
+cd vMix_testpage
+
 # Install project dependencies
 npm install
 
 # Verify installation
 npm list --depth=0
 ```
+
+If you see "Cannot find module" errors (e.g., 'express', 'ejs', etc.):
+1. This means Node.js can't find required packages
+2. Make sure you:
+   - Are in the correct project directory
+   - Have run `npm install` successfully
+   - See a `node_modules` folder in your project directory
+   - Have all dependencies listed in package.json
 
 ### Common Installation Issues
 
@@ -137,15 +150,40 @@ Steps:
 ### Troubleshooting Guide
 
 #### Server Won't Start
+
+##### Node.js Module Errors
+If you see "Cannot find module" errors:
 1. Check Node.js installation:
    ```bash
    node --version  # Should be 18.x or higher
    ```
-2. Verify all dependencies:
+2. Verify dependencies installation:
    ```bash
+   # Check if node_modules exists
+   ls node_modules  # Mac/Linux
+   dir node_modules # Windows
+
+   # If missing or empty, reinstall:
+   npm install
+
+   # Verify all dependencies:
    npm list
    ```
-3. Check port availability:
+3. If problems persist:
+   ```bash
+   # Remove node_modules and package-lock
+   rm -rf node_modules package-lock.json   # Mac/Linux
+   rd /s /q node_modules & del package-lock.json  # Windows
+
+   # Clear npm cache
+   npm cache clean --force
+
+   # Reinstall everything
+   npm install
+   ```
+
+##### Port Already in Use
+1. Check port availability:
    ```bash
    # Windows (PowerShell)
    Get-NetTCPConnection -LocalPort 5051
@@ -153,6 +191,16 @@ Steps:
    # Mac/Linux
    lsof -i :5051
    ```
+2. If port is in use:
+   - Kill the existing process
+   - Or use a different port:
+     ```bash
+     # Windows
+     set PORT=3000 && node server.js
+     
+     # Mac/Linux
+     PORT=3000 node server.js
+     ```
 
 #### Page Won't Load
 1. Verify server running (check terminal)
